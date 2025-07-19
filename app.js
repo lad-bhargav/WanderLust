@@ -6,6 +6,8 @@ const MONGO_URL = 'mongodb://127.0.0.1:27017/wanderlust';
 const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
+const wrapAsync = require("./utils/wrapAsync.js");
+const ExpressError = require("./utils/ExpressError.js");
 
 app.set("view engine","ejs");
 app.set("views",path.join(__dirname,"views"));
@@ -39,11 +41,15 @@ app.get("/listings/new",(req,res)=>{
 });
 
 //Create Route
-app.post("/listings",async(req,res)=>{
-    const newListing = new Listing(req.body.listing);
+app.post("/listings",wrapAsync(async(req,res)=>{
+    const {listing} = req.body;
+      if (!listing.image || !listing.image.url || listing.image.url.trim() === "") {
+       delete listing.image;
+    }
+    const newListing = new Listing(listing);
     await newListing.save();
     res.redirect("/listings");
-});
+}));
 
 //edit Route
 app.get("/listings/:id/edit",async (req,res)=>{
@@ -57,7 +63,7 @@ app.put("/listings/:id",async (req,res)=>{
     let {id} = req.params;
     await Listing.findByIdAndUpdate(id,{...req.body.listing});
     res.redirect(`/listings/${id}`);
-})
+});
 
 //show Route
 app.get("/listings/:id",async (req,res)=>{
@@ -71,7 +77,16 @@ app.delete("/listings/:id",async (req,res)=>{
     let {id} = req.params;
     await Listing.findByIdAndDelete(id);
     res.redirect("/listings");
-})
+});
+
+app.all("*",(req,res,next)=>{
+    next(new ExpressError(404,"Page Not Found!"));
+});
+
+app.use((err,req,res,next)=>{
+    let {statusCode,message} = err;
+    res.status(statusCode).send(message);
+});
 
 app.listen(8080,()=>{
     console.log("port is listing at 8080");
