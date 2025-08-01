@@ -79,9 +79,9 @@ app.delete("/listings/:id",wrapAsync(async (req,res)=>{
     res.redirect("/listings");
 }));
 
-app.all("*",(req,res,next)=>{
-    next(new ExpressError(404,"Page Not Found!"));
-});
+// app.all("*",(req,res,next)=>{
+//     next(new ExpressError(404,"Page Not Found!"));
+// });
 
 app.use((err,req,res,next)=>{
     let {statusCode = 500,message = "something is wrong"} = err;
